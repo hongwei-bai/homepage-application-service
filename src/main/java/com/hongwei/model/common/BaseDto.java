@@ -1,4 +1,4 @@
-package com.mike.model.common;
+package com.hongwei.model.common;
 
 import java.io.Serializable;
 

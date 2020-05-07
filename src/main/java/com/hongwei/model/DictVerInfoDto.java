@@ -1,4 +1,4 @@
-package com.mike.model;
+package com.hongwei.model;
 
 import java.util.List;
 

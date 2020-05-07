@@ -1,4 +1,4 @@
-package com.mike.model;
+package com.hongwei.model;
 
 public class HelloDto {
     String msg = null;
