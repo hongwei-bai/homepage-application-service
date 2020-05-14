@@ -1,5 +1,5 @@
 logging:
-  file: "logs/config/mike_springboot2.log"
+  file: "logs/config/hongwei_springboot2.log"
 info:
   name: "springboot2"
 
