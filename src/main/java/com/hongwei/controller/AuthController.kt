@@ -2,14 +2,15 @@ package com.hongwei.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.hongwei.enums.common.ResponseResultEnum
-import com.hongwei.model.auth.AuthJava
-import com.hongwei.model.auth.AuthYamlBean
-import com.hongwei.model.common.Response
+import com.google.gson.Gson
+import com.hongwei.model.auth.AuthYml
 import com.hongwei.model.jpa.GuestRepository
-import com.hongwei.model.jpa.UserGroupRepository
+import com.hongwei.model.jpa.User
 import com.hongwei.model.jpa.UserRepository
-import com.hongwei.util.LogWrapper
+import com.hongwei.model.soap.common.Response
+import com.hongwei.model.soap.common.SoapConstant.AUTH_FAILURE
+import com.hongwei.model.soap.common.SoapConstant.CODE_ERROR
+import com.hongwei.model.soap.common.SoapConstant.CODE_SUCCESS
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 import java.io.File
@@ -17,35 +18,68 @@ import java.io.File
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = ["http://127.0.0.1:5500"], maxAge = 3600)
+@CrossOrigin
 class AuthController {
     @Autowired
-    private val userRepository: UserRepository? = null
+    private lateinit var userRepository: UserRepository
     @Autowired
-    private val userGroupRepository: UserGroupRepository? = null
-    @Autowired
-    private val guestRepository: GuestRepository? = null
+    private lateinit var guestRepository: GuestRepository
 
-    @RequestMapping(path = ["/test.do"])
+    private val tmpToken: String = getTmpToken()
+
+    @RequestMapping(path = ["/login.do"])
     @ResponseBody
-    fun test(): String {
+    fun login(userName: String, passwordHash: String, sign: String?): String {
+        val user = userRepository.findByUserName(userName)
+                ?: return Gson().toJson(Response.from(CODE_ERROR, "user not exist"))
+
+        if (passwordHash != user.password_hash) {
+            return Gson().toJson(Response.from(CODE_ERROR, "wrong password"))
+        }
+
+        return Gson().toJson(Response.from(CODE_SUCCESS, "login success", user))
+    }
+
+    @RequestMapping(path = ["/guestLogin.do"])
+    @ResponseBody
+    fun guestLogin(guestCode: String, sign: String?): String {
+        val guest = guestRepository.findByGuestCode(guestCode)
+                ?: return Gson().toJson(Response.from(AUTH_FAILURE, "invalid guest code."))
+
+        if (guest.expire_time < System.currentTimeMillis()) {
+            return Gson().toJson(Response.from(AUTH_FAILURE, "invalid guest code: expired!"))
+        }
+
+        return Gson().toJson(Response.from(CODE_SUCCESS, "guest login success", guest))
+    }
+
+    @GetMapping(path = ["/checkUserNameExist.do"])
+    @ResponseBody
+    fun checkUserNameExist(userName: String, sign: String?): String {
+        val exist: Boolean = userRepository.findByUserName(userName) != null
+        return Gson().toJson(Response.from(CODE_SUCCESS, "query success", exist))
+    }
+
+    @PutMapping(path = ["/register.do"])
+    @ResponseBody
+    fun register(userName: String, passwordHash: String, sign: String?): String {
+        userRepository.findByUserName(userName)?.let {
+            return Gson().toJson(Response.from(CODE_ERROR, "username already exist"))
+        }
+        val user = User().apply {
+            user_name = userName
+            password_hash = passwordHash
+            this.roles = roles
+            token = tmpToken
+        }
+        userRepository.save(user)
+        return Gson().toJson(Response.from(CODE_SUCCESS, "register success", user))
+    }
+
+    private fun getTmpToken(): String {
         val mapper = ObjectMapper(YAMLFactory())
         mapper.findAndRegisterModules()
-        val bean: AuthJava = mapper.readValue(File("src/main/resources/auth.yaml"), AuthJava::class.java)
+        val bean: AuthYml = mapper.readValue(File("src/main/resources/auth.yaml"), AuthYml::class.java)
         return bean.token
-    }
-
-    @RequestMapping(path = ["/addUser/{username}/{password_hash}"])
-    @ResponseBody
-    fun addUser(@PathVariable("username") username: String?, @PathVariable("password_hash") password_hash: String?): String {
-        return ""
-    }
-
-    @PutMapping("/init_request.ajax")
-    @Throws(Exception::class)
-    fun initRequest(requestId: Long): Response<*> {
-        LogWrapper.debug("logger======TestController=======initRequest======requestId:$requestId")
-        //        flowRequestService.reAddRequest(requestId, requestName, applicant);
-        return Response.from(ResponseResultEnum.SUCCESS.toCode(), ResponseResultEnum.SUCCESS.toDescription())
     }
 }

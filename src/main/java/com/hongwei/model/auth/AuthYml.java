@@ -1,7 +1,7 @@
 package com.hongwei.model.auth;
 
-public class AuthJava {
-    public String token;
+public class AuthYml {
+    private String token;
 
     public String getToken() {
         return token;
