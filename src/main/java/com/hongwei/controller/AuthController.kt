@@ -1,9 +1,7 @@
 package com.hongwei.controller
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.google.gson.Gson
-import com.hongwei.model.auth.AuthYml
+import com.hongwei.Constant
 import com.hongwei.model.jpa.GuestRepository
 import com.hongwei.model.jpa.User
 import com.hongwei.model.jpa.UserRepository
@@ -13,7 +11,6 @@ import com.hongwei.model.soap.common.SoapConstant.CODE_ERROR
 import com.hongwei.model.soap.common.SoapConstant.CODE_SUCCESS
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
-import java.io.File
 
 
 @RestController
@@ -77,9 +74,6 @@ class AuthController {
     }
 
     private fun getTmpToken(): String {
-        val mapper = ObjectMapper(YAMLFactory())
-        mapper.findAndRegisterModules()
-        val bean: AuthYml = mapper.readValue(File("src/main/resources/auth.yaml"), AuthYml::class.java)
-        return bean.token
+        return Constant.ACCESS_TOKEN
     }
 }
