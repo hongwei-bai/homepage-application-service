@@ -6,10 +6,7 @@ import com.hongwei.model.arcgis.covid19.BeanByAuState
 import com.hongwei.model.arcgis.covid19.Features
 import com.hongwei.model.covid19.AusDataByState
 import com.hongwei.model.covid19.AusDataByStatePerDay
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,16 +15,36 @@ import java.util.*
 @RequestMapping("/covid19")
 @CrossOrigin
 class Covid19Controller {
+    private var daysFromLastQuery = 5
+    private var outDataFromLastTimer: AusDataByState? = null
+
     @RequestMapping(path = ["/querybystate.do"])
     @ResponseBody
     fun getAuDataByState(days: Int): String {
+        daysFromLastQuery = days
+        val cache = outDataFromLastTimer
+        cache?.let {
+            Thread {
+                outDataFromLastTimer = queryAuDataByStateImpl(days)
+            }.start()
+            return Gson().toJson(it)
+        }
+        val outData = queryAuDataByStateImpl(days)
+        return Gson().toJson(outData)
+    }
+
+    internal fun queryAuDataByStateFromTimer() {
+        outDataFromLastTimer = queryAuDataByStateImpl(daysFromLastQuery)
+        outDataFromLastTimer?.isNewData = false
+    }
+
+    private fun queryAuDataByStateImpl(days: Int): AusDataByState {
         val uri = "https://services1.arcgis.com/vHnIGBHHqDR6y0CR/arcgis/rest/services/COVID19_Time_Series/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=json"
         val restTemplate = RestTemplate()
         val json = restTemplate.getForObject(uri, String::class.java)
         val data = Gson().fromJson(json, BeanByAuState::class.java)
         val features = data.features
-        val outData = parseFeatures(features, days)
-        return Gson().toJson(outData)
+        return parseFeatures(features, days)
     }
 
     private fun parseFeatures(features: Array<Features>, daysIn: Int): AusDataByState {
@@ -35,7 +52,7 @@ class Covid19Controller {
         val lastDay = features.size - 1
         val dayFrom = lastDay - days
         var previous: Attributes? = null
-        val date = AusDataByState(Array<AusDataByStatePerDay?>(lastDay - dayFrom + 1) { null })
+        val date = AusDataByState(true, Array<AusDataByStatePerDay?>(lastDay - dayFrom + 1) { null })
         for (i in dayFrom..lastDay) {
             val current = features[i].attributes
             if (previous != null) {

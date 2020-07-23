@@ -1,4 +1,4 @@
-#For local Windows NT MySQL Test
+#For both local Windows NT MySQL Debug & Web server
 spring.datasource.url=jdbc:mysql://localhost:3306/test
 spring.datasource.username=user
 spring.datasource.password=xxx
