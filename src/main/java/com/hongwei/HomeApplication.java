@@ -10,9 +10,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 // Deploy 1 - IntelliJ IDEA Debug
 //@SpringBootApplication
 //@EnableScheduling
-//public class DemoApplication {
+//public class HomeApplication {
 //    public static void main(String[] args) {
-//        SpringApplication.run(DemoApplication.class, args);
+//        SpringApplication.run(HomeApplication.class, args);
 //    }
 //}
 
@@ -20,14 +20,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EntityScan
 @SpringBootApplication
 @EnableScheduling
-public class DemoApplication extends SpringBootServletInitializer {
+public class HomeApplication extends SpringBootServletInitializer {
 
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+        SpringApplication.run(HomeApplication.class, args);
     }
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
-        return builder.sources(DemoApplication.class);
+        return builder.sources(HomeApplication.class);
     }
 }
