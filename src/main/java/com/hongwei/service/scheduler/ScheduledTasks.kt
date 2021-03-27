@@ -1,4 +1,4 @@
-package com.hongwei.controller.scheduler
+package com.hongwei.service.scheduler
 
 import com.hongwei.controller.Covid19Controller
 import org.springframework.beans.factory.annotation.Autowired

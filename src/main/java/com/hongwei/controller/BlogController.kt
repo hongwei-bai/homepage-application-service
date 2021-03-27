@@ -16,40 +16,35 @@ class BlogController {
 
     @GetMapping(path = ["/{id}/entry.do"])
     @ResponseBody
-    fun getBlogEntry(@PathVariable("id") id: Long, owner: String, sign: String?): ResponseEntity<*> {
-        return ResponseEntity.ok(blogEntryRepository.findById(id).get())
-    }
+    fun getBlogEntry(@PathVariable("id") id: Long, owner: String, sign: String?): ResponseEntity<*> =
+            ResponseEntity.ok(blogEntryRepository.findById(id).get())
 
     @GetMapping(path = ["/entry.do"])
     @ResponseBody
-    fun getAllBlogEntries(owner: String, sign: String?): ResponseEntity<*> {
-        return ResponseEntity.ok(blogEntryRepository.findByOwner(owner))
-    }
+    fun getAllBlogEntries(owner: String): ResponseEntity<*> =
+            ResponseEntity.ok(blogEntryRepository.findByOwner(owner))
 
     @PostMapping(path = ["/entry.do"])
     @ResponseBody
     fun addBlogEntry(owner: String, title: String, description: String?, content: String, delta: String,
-                     categories: String?, tags: String?, sign: String?): ResponseEntity<*> {
-
-        val entry = blogEntryRepository.save(BlogEntry().apply {
-            this.owner = owner
-            this.title = title
-            this.content = content
-            this.delta = delta
-            this.description = description
-            this.categories = categories
-            this.tags = tags
-            this.accessLevel = "public"
-            this.createDate = System.currentTimeMillis()
-            this.modifyDate = System.currentTimeMillis()
-        })
-        return ResponseEntity.ok(entry)
-    }
+                     categories: String?, tags: String?): ResponseEntity<*> =
+            ResponseEntity.ok(blogEntryRepository.save(BlogEntry().apply {
+                this.owner = owner
+                this.title = title
+                this.content = content
+                this.delta = delta
+                this.description = description
+                this.categories = categories
+                this.tags = tags
+                this.accessLevel = "public"
+                this.createDate = System.currentTimeMillis()
+                this.modifyDate = System.currentTimeMillis()
+            }))
 
     @PutMapping(path = ["/{id}/entry.do"])
     @ResponseBody
     fun updateBlogEntry(@PathVariable("id") id: Long, owner: String, title: String?, description: String?, content: String?,
-                        delta: String, categories: String?, tags: String?, sign: String?): ResponseEntity<*> {
+                        delta: String, categories: String?, tags: String?): ResponseEntity<*> {
         if (!blogEntryRepository.findById(id).isPresent) {
             throw NotFound
         }
@@ -68,7 +63,7 @@ class BlogController {
 
     @DeleteMapping(path = ["/{id}/entry.do"])
     @ResponseBody
-    fun deleteBlogEntry(@PathVariable("id") id: Long, owner: String, sign: String?): ResponseEntity<*> {
+    fun deleteBlogEntry(@PathVariable("id") id: Long, owner: String): ResponseEntity<*> {
         if (!blogEntryRepository.findById(id).isPresent) {
             throw NotFound
         }
