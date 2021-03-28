@@ -8,3 +8,8 @@ spring.datasource.password=xxx
 spring.datasource.driver-class-name=com.mysql.jdbc.Driver
 
 spring.jpa.properties.hibernate.hbm2ddl.auto=update
+
+#debug
+server.port=8081
+#jwt.authorizationDomain=http://localhost:8082
+jwt.authorizationDomain=http://localhost:8080/application-service-authentication
