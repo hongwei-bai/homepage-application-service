@@ -1,4 +1,4 @@
-package com.hongwei.constant
+package com.hongwei.constants
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus

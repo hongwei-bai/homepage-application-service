@@ -1,6 +1,6 @@
 package com.hongwei.controller
 
-import com.hongwei.constant.NotFound
+import com.hongwei.constants.NotFound
 import com.hongwei.model.jpa.BlogEntry
 import com.hongwei.model.jpa.BlogEntryRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/blog")
-@CrossOrigin
+@CrossOrigin(origins = ["*"])
 class BlogController {
     @Autowired
     private lateinit var blogEntryRepository: BlogEntryRepository
