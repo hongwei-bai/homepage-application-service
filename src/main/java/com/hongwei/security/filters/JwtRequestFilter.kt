@@ -33,22 +33,45 @@ class JwtRequestFilter : OncePerRequestFilter() {
     @Throws(ServletException::class, IOException::class)
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
         val authorizationHeader = request.getHeader(securityConfigurations.authorizationHeader)
-        if (authorizationHeader != null && authorizationHeader.startsWith(securityConfigurations.authorizationBearer)) {
+
+        if (doCORSFilter(request, response)) {
+            grantAccess(request)
+        } else if (authorizationHeader != null && authorizationHeader.startsWith(securityConfigurations.authorizationBearer)) {
             val jwt = authorizationHeader.substring(securityConfigurations.authorizationBearer.length + 1)
             val authorisationResponse = authorisationService.authorise(jwt)
 
             if (SecurityContextHolder.getContext().authentication == null
                     && authorisationResponse.validated == true) {
-                val userDetails = userDetailsService.loadUserByUsername("stub")
-
-                // Grant access
-                val usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.authorities)
-                usernamePasswordAuthenticationToken.details = WebAuthenticationDetailsSource().buildDetails(request)
-                SecurityContextHolder.getContext().authentication = usernamePasswordAuthenticationToken
+                grantAccess(request)
             }
         }
 
         chain.doFilter(request, response)
+    }
+
+    private fun doCORSFilter(request: HttpServletRequest, response: HttpServletResponse): Boolean {
+        // Authorize (allow) all domains to consume the content
+//        response.addHeader("Access-Control-Allow-Origin", "*")
+//        response.addHeader("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD, PUT, POST")
+//        response.addHeader("Access-Control-Request-Headers", securityConfigurations.authorizationHeader)
+
+        // For HTTP OPTIONS verb/method reply with ACCEPTED status code -- per CORS handshake
+        if (request.method == "OPTIONS") {
+//            response.status = HttpServletResponse.SC_ACCEPTED
+            return true
+        }
+
+        // pass the request along the filter chain
+        return false
+    }
+
+    private fun grantAccess(request: HttpServletRequest) {
+        val userDetails = userDetailsService.loadUserByUsername("stub")
+
+        // Grant access
+        val usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.authorities)
+        usernamePasswordAuthenticationToken.details = WebAuthenticationDetailsSource().buildDetails(request)
+        SecurityContextHolder.getContext().authentication = usernamePasswordAuthenticationToken
     }
 }

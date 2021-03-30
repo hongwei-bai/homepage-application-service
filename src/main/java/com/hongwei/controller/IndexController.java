@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class IndexController {
     @RequestMapping(path = {"/index.do", "/"})
     @ResponseBody

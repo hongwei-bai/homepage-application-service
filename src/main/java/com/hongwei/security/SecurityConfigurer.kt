@@ -20,7 +20,7 @@ open class SecurityConfigurer : WebSecurityConfigurerAdapter() {
     private lateinit var userDetailsService: MyUserDetailsService
 
     @Autowired
-    private val jwtRequestFilter: JwtRequestFilter? = null
+    private lateinit var jwtRequestFilter: JwtRequestFilter
 
     override fun configure(auth: AuthenticationManagerBuilder) {
         auth.userDetailsService(userDetailsService)
