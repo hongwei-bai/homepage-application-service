@@ -3,8 +3,6 @@ package com.hongwei.security.filters
 import com.hongwei.constants.SecurityConfigurations
 import com.hongwei.security.service.AuthorisationService
 import com.hongwei.security.service.MyUserDetailsService
-import org.apache.log4j.LogManager
-import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -19,8 +17,6 @@ import javax.servlet.http.HttpServletResponse
 
 @Component
 class JwtRequestFilter : OncePerRequestFilter() {
-    private val myLogger: Logger = LogManager.getLogger(JwtRequestFilter::class.java)
-
     @Autowired
     private lateinit var userDetailsService: MyUserDetailsService
 
