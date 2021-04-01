@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/blog")
-@CrossOrigin
 class BlogController {
     @Autowired
     private lateinit var blogEntryRepository: BlogEntryRepository

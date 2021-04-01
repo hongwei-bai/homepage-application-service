@@ -10,4 +10,5 @@ open class SecurityConfigurations {
     lateinit var authorizationBearer: String
     lateinit var authorizationDomain: String
     lateinit var authorizationEndpoint: String
+    lateinit var corsAllowDomains: List<String>
 }

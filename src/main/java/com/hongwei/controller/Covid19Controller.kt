@@ -13,7 +13,6 @@ import java.util.*
 
 @RestController
 @RequestMapping("/covid19")
-@CrossOrigin
 class Covid19Controller {
     private var daysFromLastQuery = 5
     private var outDataFromLastTimer: AusDataByState? = null
