@@ -15,13 +15,15 @@ class BlogController {
 
     @GetMapping(path = ["/{id}/entry.do"])
     @ResponseBody
-    fun getBlogEntry(@PathVariable("id") id: Long, owner: String, sign: String?): ResponseEntity<*> =
+    fun getBlogEntry(@PathVariable("id") id: Long, owner: String?, sign: String?): ResponseEntity<*> =
             ResponseEntity.ok(blogEntryRepository.findById(id).get())
 
     @GetMapping(path = ["/entry.do"])
     @ResponseBody
-    fun getAllBlogEntries(owner: String): ResponseEntity<*> =
-            ResponseEntity.ok(blogEntryRepository.findByOwner(owner))
+    fun getAllBlogEntries(owner: String?): ResponseEntity<*> =
+            owner?.let {
+                ResponseEntity.ok(blogEntryRepository.findByOwner(owner))
+            } ?: ResponseEntity.ok(blogEntryRepository.findAll())
 
     @PostMapping(path = ["/entry.do"])
     @ResponseBody
