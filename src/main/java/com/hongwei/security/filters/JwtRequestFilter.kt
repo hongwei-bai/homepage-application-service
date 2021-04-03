@@ -11,6 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
+import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.filter.OncePerRequestFilter
 import java.io.IOException
 import javax.servlet.FilterChain
@@ -44,11 +45,15 @@ class JwtRequestFilter : OncePerRequestFilter() {
             grantAccess(request)
         } else if (authorizationHeader != null && authorizationHeader.startsWith(securityConfigurations.authorizationBearer)) {
             val jwt = authorizationHeader.substring(securityConfigurations.authorizationBearer.length + 1)
-            val authorisationResponse = authorisationService.authorise(jwt)
+            try {
+                val authorisationResponse = authorisationService.authorise(jwt)
 
-            if (SecurityContextHolder.getContext().authentication == null
-                    && authorisationResponse.validated == true) {
-                grantAccess(request)
+                if (SecurityContextHolder.getContext().authentication == null
+                        && authorisationResponse.validated == true) {
+                    grantAccess(request)
+                }
+            } catch (e: HttpStatusCodeException) {
+                response.status = e.statusCode.value()
             }
         }
 
