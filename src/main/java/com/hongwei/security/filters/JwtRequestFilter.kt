@@ -1,21 +1,21 @@
 package com.hongwei.security.filters
 
+import com.hongwei.constants.CAUSE_TOKEN_EXPIRED
 import com.hongwei.constants.SecurityConfigurations
 import com.hongwei.security.service.AuthorisationService
 import com.hongwei.security.service.MyUserDetailsService
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders.*
 import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
-import org.springframework.web.client.HttpStatusCodeException
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.filter.OncePerRequestFilter
-import java.io.IOException
 import javax.servlet.FilterChain
-import javax.servlet.ServletException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -32,7 +32,6 @@ class JwtRequestFilter : OncePerRequestFilter() {
     @Autowired
     private lateinit var securityConfigurations: SecurityConfigurations
 
-    @Throws(ServletException::class, IOException::class)
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
         val authorizationHeader = request.getHeader(securityConfigurations.authorizationHeader)
 
@@ -52,11 +51,19 @@ class JwtRequestFilter : OncePerRequestFilter() {
                         && authorisationResponse.validated == true) {
                     grantAccess(request)
                 }
-            } catch (e: HttpStatusCodeException) {
+            } catch (e: HttpClientErrorException) {
+                /*
+                I had a issue that I always got 403 FORBIDDEN instead of 401 UNAUTHORIZED,
+                The fix is to add an authenticationEntryPoint in WebSecurityConfigurerAdapter::configure callback.
+                Reference: https://stackoverflow.com/questions/49241384/401-instead-of-403-with-spring-boot-2
+                More: https://stackoverflow.com/questions/49497192/spring-boot-2-403-instead-of-401-in-filter-based-jwt-spring-security-implement
+                 */
                 response.status = e.statusCode.value()
+                response.writer.write(CAUSE_TOKEN_EXPIRED)
             }
         }
 
+        appendCORSHeaders(response)
         chain.doFilter(request, response)
     }
 
@@ -68,5 +75,14 @@ class JwtRequestFilter : OncePerRequestFilter() {
                 userDetails, null, userDetails.authorities)
         usernamePasswordAuthenticationToken.details = WebAuthenticationDetailsSource().buildDetails(request)
         SecurityContextHolder.getContext().authentication = usernamePasswordAuthenticationToken
+    }
+
+    private fun appendCORSHeaders(response: HttpServletResponse) {
+        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, CONTENT_TYPE)
+        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, securityConfigurations.authorizationHeader)
+        response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, true.toString())
+        securityConfigurations.corsAllowDomains.forEach { domain ->
+            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, domain)
+        }
     }
 }

@@ -16,6 +16,8 @@ object NotFound : RuntimeException()
 @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
 object Unauthorized : RuntimeException()
 
+const val CAUSE_TOKEN_EXPIRED = "TOKEN_EXPIRED"
+
 @ResponseStatus(value = HttpStatus.NON_AUTHORITATIVE_INFORMATION)
 object NonAuthoritative : RuntimeException()
 
@@ -48,3 +50,6 @@ object NotImplemented : RuntimeException()
 
 @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
 object ServiceUnavailable : RuntimeException()
+
+@ResponseStatus(value = HttpStatus.NETWORK_AUTHENTICATION_REQUIRED)
+object NetworkAuthenticationRequired : RuntimeException()
