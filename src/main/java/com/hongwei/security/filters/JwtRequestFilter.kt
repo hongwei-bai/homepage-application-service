@@ -1,7 +1,9 @@
 package com.hongwei.security.filters
 
-import com.hongwei.constants.CAUSE_TOKEN_EXPIRED
+import com.hongwei.constants.AppTokenExpiredException
 import com.hongwei.constants.SecurityConfigurations
+import com.hongwei.security.model.SubCodeResponseFactory.noPermission
+import com.hongwei.security.model.SubCodeResponseFactory.tokenExpired
 import com.hongwei.security.service.AuthorisationService
 import com.hongwei.security.service.MyUserDetailsService
 import org.apache.log4j.LogManager
@@ -13,7 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
-import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.filter.OncePerRequestFilter
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
@@ -45,21 +46,21 @@ class JwtRequestFilter : OncePerRequestFilter() {
         } else if (authorizationHeader != null && authorizationHeader.startsWith(securityConfigurations.authorizationBearer)) {
             val jwt = authorizationHeader.substring(securityConfigurations.authorizationBearer.length + 1)
             try {
-                val authorisationResponse = authorisationService.authorise(jwt)
-
-                if (SecurityContextHolder.getContext().authentication == null
-                        && authorisationResponse.validated == true) {
-                    grantAccess(request)
+                if (SecurityContextHolder.getContext().authentication == null) {
+                    if (authorisationService.authorise(jwt, request.method, request.requestURI)) {
+                        grantAccess(request)
+                    } else {
+                        /*
+                        I had a issue that I always got 403 FORBIDDEN instead of 401 UNAUTHORIZED,
+                        The fix is to add an authenticationEntryPoint in WebSecurityConfigurerAdapter::configure callback.
+                        Reference: https://stackoverflow.com/questions/49241384/401-instead-of-403-with-spring-boot-2
+                        More: https://stackoverflow.com/questions/49497192/spring-boot-2-403-instead-of-401-in-filter-based-jwt-spring-security-implement
+                        */
+                        response.writer.write(noPermission())
+                    }
                 }
-            } catch (e: HttpClientErrorException) {
-                /*
-                I had a issue that I always got 403 FORBIDDEN instead of 401 UNAUTHORIZED,
-                The fix is to add an authenticationEntryPoint in WebSecurityConfigurerAdapter::configure callback.
-                Reference: https://stackoverflow.com/questions/49241384/401-instead-of-403-with-spring-boot-2
-                More: https://stackoverflow.com/questions/49497192/spring-boot-2-403-instead-of-401-in-filter-based-jwt-spring-security-implement
-                 */
-                response.status = e.statusCode.value()
-                response.writer.write(CAUSE_TOKEN_EXPIRED)
+            } catch (e: AppTokenExpiredException) {
+                response.writer.write(tokenExpired())
             }
         }
 
@@ -78,11 +79,8 @@ class JwtRequestFilter : OncePerRequestFilter() {
     }
 
     private fun appendCORSHeaders(response: HttpServletResponse) {
-        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, CONTENT_TYPE)
-        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, securityConfigurations.authorizationHeader)
         response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, true.toString())
-        securityConfigurations.corsAllowDomains.forEach { domain ->
-            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, domain)
-        }
+        response.addHeader(ACCESS_CONTROL_ALLOW_HEADERS, "$CONTENT_TYPE,${securityConfigurations.authorizationHeader}")
+        response.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, securityConfigurations.corsAllowDomains.joinToString(","))
     }
 }
