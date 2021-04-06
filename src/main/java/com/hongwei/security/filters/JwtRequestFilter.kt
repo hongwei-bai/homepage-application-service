@@ -1,10 +1,8 @@
 package com.hongwei.security.filters
 
-import com.hongwei.constants.AppTokenExpiredException
+import com.hongwei.constants.Constants.Security.PUBLIC_ACCESS_STUB_USER
 import com.hongwei.constants.SecurityConfigurations
-import com.hongwei.security.model.SubCodeResponseFactory.noPermission
-import com.hongwei.security.model.SubCodeResponseFactory.tokenExpired
-import com.hongwei.security.service.AuthorisationService
+import com.hongwei.security.PublicTokenService
 import com.hongwei.security.service.MyUserDetailsService
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
@@ -28,39 +26,21 @@ class JwtRequestFilter : OncePerRequestFilter() {
     private lateinit var userDetailsService: MyUserDetailsService
 
     @Autowired
-    private lateinit var authorisationService: AuthorisationService
+    private lateinit var securityConfigurations: SecurityConfigurations
 
     @Autowired
-    private lateinit var securityConfigurations: SecurityConfigurations
+    private lateinit var publicTokenService: PublicTokenService
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
         val authorizationHeader = request.getHeader(securityConfigurations.authorizationHeader)
-
-        /*
-        The W3 spec for CORS preflight requests clearly states that user credentials should be excluded.
-        Reference[a]: https://stackoverflow.com/questions/15734031/why-does-the-preflight-options-request-of-an-authenticated-cors-request-work-in
-        Reference[b]: https://fetch.spec.whatwg.org/#cors-protocol-and-credentials
-         */
         if (request.method == HttpMethod.OPTIONS.name) {
             grantAccess(request)
         } else if (authorizationHeader != null && authorizationHeader.startsWith(securityConfigurations.authorizationBearer)) {
             val jwt = authorizationHeader.substring(securityConfigurations.authorizationBearer.length + 1)
-            try {
-                if (SecurityContextHolder.getContext().authentication == null) {
-                    if (authorisationService.authorise(jwt, request.method, request.requestURI)) {
-                        grantAccess(request)
-                    } else {
-                        /*
-                        I had a issue that I always got 403 FORBIDDEN instead of 401 UNAUTHORIZED,
-                        The fix is to add an authenticationEntryPoint in WebSecurityConfigurerAdapter::configure callback.
-                        Reference: https://stackoverflow.com/questions/49241384/401-instead-of-403-with-spring-boot-2
-                        More: https://stackoverflow.com/questions/49497192/spring-boot-2-403-instead-of-401-in-filter-based-jwt-spring-security-implement
-                        */
-                        response.writer.write(noPermission())
-                    }
-                }
-            } catch (e: AppTokenExpiredException) {
-                response.writer.write(tokenExpired())
+            publicTokenService.validateToken(jwt)
+
+            if (SecurityContextHolder.getContext().authentication == null) {
+                grantAccess(request)
             }
         }
 
@@ -69,11 +49,11 @@ class JwtRequestFilter : OncePerRequestFilter() {
     }
 
     private fun grantAccess(request: HttpServletRequest) {
-        val userDetails = userDetailsService.loadUserByUsername("stub")
+        val userDetails = userDetailsService.loadUserByUsername(PUBLIC_ACCESS_STUB_USER)
 
         // Grant access
         val usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.authorities)
+                userDetails, userDetails.password, userDetails.authorities)
         usernamePasswordAuthenticationToken.details = WebAuthenticationDetailsSource().buildDetails(request)
         SecurityContextHolder.getContext().authentication = usernamePasswordAuthenticationToken
     }
@@ -81,6 +61,6 @@ class JwtRequestFilter : OncePerRequestFilter() {
     private fun appendCORSHeaders(response: HttpServletResponse) {
         response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, true.toString())
         response.addHeader(ACCESS_CONTROL_ALLOW_HEADERS, "$CONTENT_TYPE,${securityConfigurations.authorizationHeader}")
-        response.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, securityConfigurations.corsAllowDomains.joinToString(","))
+        response.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, securityConfigurations.corsAllowDomain)
     }
 }

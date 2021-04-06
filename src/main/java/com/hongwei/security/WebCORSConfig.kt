@@ -25,6 +25,6 @@ open class WebCORSConfig : WebMvcConfigurer {
                 )
                 .allowedHeaders(CONTENT_TYPE, securityConfigurations.authorizationHeader)
                 .allowCredentials(true)
-                .allowedOrigins(*securityConfigurations.corsAllowDomains.toTypedArray())
+                .allowedOrigins(securityConfigurations.corsAllowDomain)
     }
 }

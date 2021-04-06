@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration
 open class SecurityConfigurations {
     lateinit var authorizationHeader: String
     lateinit var authorizationBearer: String
-    lateinit var authorizationDomain: String
-    lateinit var authorizationEndpoint: String
-    lateinit var corsAllowDomains: List<String>
+    lateinit var secretPublic: String
+    lateinit var corsAllowDomain: String
 }

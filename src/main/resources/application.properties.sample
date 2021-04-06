@@ -7,17 +7,20 @@ spring.datasource.username={mysql username}
 spring.datasource.password={mysql password}
 spring.datasource.driver-class-name=com.mysql.jdbc.Driver
 spring.jpa.properties.hibernate.hbm2ddl.auto=update
+
 server.error.include-message=always
+server.port=8081
 
 #Security
 jwt.authorizationHeader=Authorization
 jwt.authorizationBearer=Bearer
-jwt.authorizationEndpoint=/authenticate/authorise.do
-jwt.corsAllowDomains[0]={domain name}
-jwt.corsAllowDomains[1]=http://localhost:3000
-#jwt.authorizationDomain=https://{domain name}/application-service-authentication
+jwt.secretPublic=Public2021
 
-#debug
-server.port=8081
-#jwt.authorizationDomain=http://localhost:8082
-jwt.authorizationDomain=http://localhost:8080/application-service-authentication
+#Debug
+jwt.corsAllowDomain=http://localhost:3944
+
+#Debug with Tomcat Authentication application
+#jwt.corsAllowDomain=http://localhost:3944
+
+#Deployment
+#jwt.corsAllowDomain=https://{domain name}
