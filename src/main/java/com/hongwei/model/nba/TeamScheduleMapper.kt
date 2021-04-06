@@ -10,10 +10,13 @@ import java.util.*
 import java.util.Date
 
 object TeamScheduleMapper {
+    private const val WEEK_TS = 3600 * 24 * 7L
+
     fun map(teamScheduleSource: TeamScheduleSource): TeamSchedule = TeamSchedule(
             teamScheduleSource.events.pre.first().group
                     .filter {
-                        parseDate(it.date.date)?.after(Date.from(now())) == true
+                        val lastWeekTs = Date.from(now()).time - WEEK_TS
+                        parseDate(it.date.date)?.after(Date(lastWeekTs)) == true
                     }
                     .map {
                         val date = parseDate(it.date.date)!!

@@ -87,10 +87,12 @@ class Covid19Controller {
     }
 
     private fun calcLongDiff(current: Long, previous: Long?): Long {
-        return if (previous != null) {
+        return if (current != null && previous != null) {
             current - previous
-        } else run {
+        } else if (current != null && previous == null) {
             current
+        } else {
+            0
         }
     }
 }
