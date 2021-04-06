@@ -6,6 +6,7 @@ import com.hongwei.model.arcgis.covid19.BeanByAuState
 import com.hongwei.model.arcgis.covid19.Features
 import com.hongwei.model.covid19.AusDataByState
 import com.hongwei.model.covid19.AusDataByStatePerDay
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
 import java.text.SimpleDateFormat
@@ -17,19 +18,19 @@ class Covid19Controller {
     private var daysFromLastQuery = 5
     private var outDataFromLastTimer: AusDataByState? = null
 
-    @RequestMapping(path = ["/querybystate.do"])
+    @RequestMapping(path = ["/queryByState.do"])
     @ResponseBody
-    fun getAuDataByState(days: Int): String {
+    fun getAuDataByState(days: Int): ResponseEntity<*> {
         daysFromLastQuery = days
         val cache = outDataFromLastTimer
         cache?.let {
             Thread {
                 outDataFromLastTimer = queryAuDataByStateImpl(days)
             }.start()
-            return Gson().toJson(it)
+            return ResponseEntity.ok(it)
         }
         val outData = queryAuDataByStateImpl(days)
-        return Gson().toJson(outData)
+        return ResponseEntity.ok(outData)
     }
 
     internal fun queryAuDataByStateFromTimer() {
@@ -86,12 +87,10 @@ class Covid19Controller {
     }
 
     private fun calcLongDiff(current: Long, previous: Long?): Long {
-        return if (current != null && previous != null) {
+        return if (previous != null) {
             current - previous
-        } else if (current != null && previous == null) {
+        } else run {
             current
-        } else {
-            0
         }
     }
 }

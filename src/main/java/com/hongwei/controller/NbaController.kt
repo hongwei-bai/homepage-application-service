@@ -15,7 +15,7 @@ class NbaController {
     @Autowired
     private lateinit var nbaService: NbaService
 
-    @RequestMapping(path = ["/querybystate.do"])
+    @RequestMapping(path = ["/teamSchedule.do"])
     @ResponseBody
     fun getScheduleByTeam(@RequestBody nbaScheduleRequest: NbaScheduleRequest): ResponseEntity<*> =
             ResponseEntity.ok(nbaService.getScheduleByTeam(nbaScheduleRequest))
