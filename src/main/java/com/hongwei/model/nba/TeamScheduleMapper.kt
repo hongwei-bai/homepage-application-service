@@ -13,6 +13,7 @@ object TeamScheduleMapper {
     private const val WEEK_TS = 3600 * 24 * 7L
 
     fun map(teamScheduleSource: TeamScheduleSource): TeamSchedule = TeamSchedule(
+            teamScheduleSource.dataVersion ?: 0,
             teamScheduleSource.events.pre.first().group
                     .filter {
                         val lastWeekTs = Date.from(now()).time - WEEK_TS

@@ -29,4 +29,17 @@ class NbaService {
                 .readValue(File(jsonPath), TeamScheduleSource::class.java)
         return NbaScheduleResponse(TeamScheduleMapper.map(teamSchedule))
     }
+
+    @Throws(IOException::class)
+    fun getScheduleByTeam(team: String, currentDataVersion: Long): NbaScheduleResponse? {
+        val jsonPath = nbaJsonPath.replace("{team}", team)
+        val teamSchedule = ObjectMapper().registerModule(KotlinModule())
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .readValue(File(jsonPath), TeamScheduleSource::class.java)
+        return if ((teamSchedule.dataVersion ?: 0) > currentDataVersion) {
+            NbaScheduleResponse(TeamScheduleMapper.map(teamSchedule))
+        } else {
+            null
+        }
+    }
 }

@@ -23,6 +23,9 @@ object NonAuthoritative : RuntimeException()
 @ResponseStatus(value = HttpStatus.NO_CONTENT)
 object NoContent : RuntimeException()
 
+@ResponseStatus(value = HttpStatus.RESET_CONTENT)
+object ResetContent : RuntimeException()
+
 @ResponseStatus(value = HttpStatus.NOT_MODIFIED)
 object NotModified : RuntimeException()
 
