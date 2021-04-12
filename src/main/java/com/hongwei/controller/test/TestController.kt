@@ -1,12 +1,12 @@
 package com.hongwei.controller.test
 
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
 
-@Controller
+@RestController
 @CrossOrigin
 class TestController {
     @Value("\${spring.jmx.default-domain}")
