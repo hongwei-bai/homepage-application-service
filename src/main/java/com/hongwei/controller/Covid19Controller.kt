@@ -6,6 +6,8 @@ import com.hongwei.model.arcgis.covid19.BeanByAuState
 import com.hongwei.model.arcgis.covid19.Features
 import com.hongwei.model.covid19.AusDataByState
 import com.hongwei.model.covid19.AusDataByStatePerDay
+import com.hongwei.service.AuGovCovidService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
@@ -18,9 +20,30 @@ class Covid19Controller {
     private var daysFromLastQuery = 5
     private var outDataFromLastTimer: AusDataByState? = null
 
+    @Autowired
+    private lateinit var auGovCovidService: AuGovCovidService
+
+    @PutMapping(path = ["/auPostcodes.do"])
+    @ResponseBody
+    fun generateAustralianPostcodes(): ResponseEntity<*> {
+        return ResponseEntity.ok(auGovCovidService.initializeSuburb())
+    }
+
+    @PutMapping(path = ["/auGovNotifications.do"])
+    @ResponseBody
+    fun generateAuGovNotifications(): ResponseEntity<*> {
+        return ResponseEntity.ok(auGovCovidService.parseCsv())
+    }
+
     @RequestMapping(path = ["/queryByState.do"])
     @ResponseBody
     fun getAuDataByState(days: Int): ResponseEntity<*> {
+        return ResponseEntity.ok(auGovCovidService.getNewCasesByState(days.toLong()))
+    }
+
+    @RequestMapping(path = ["/queryByStateOld.do"])
+    @ResponseBody
+    fun getAuDataByStateOld(days: Int): ResponseEntity<*> {
         daysFromLastQuery = days
         val cache = outDataFromLastTimer
         cache?.let {
