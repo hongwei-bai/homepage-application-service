@@ -13,5 +13,12 @@ data class AusDataByStatePerDay(
         var NT: Long = 0,
         var ACT: Long = 0,
         var Total_Cases: Long = 0,
-        var caseByPostcode: List<Triple<Long, String, Long>> = emptyList()
+        var caseByPostcode: List<CaseByPostcode> = emptyList()
+)
+
+data class CaseByPostcode(
+        val postcode: Long,
+        val suburbs: String,
+        val state: String,
+        val cases: Long
 )

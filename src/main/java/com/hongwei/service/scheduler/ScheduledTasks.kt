@@ -27,7 +27,7 @@ class ScheduledTasks {
     }
 
     companion object {
-        val AustralianCovidUpdateHours = listOf(6, 16)
+        val AustralianCovidUpdateHours = listOf(6, 14, 16)
 
         const val UTC = "UTC"
         const val SYDNEY = "Australia/Sydney"

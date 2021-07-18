@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken
 import com.hongwei.model.au.AuPostcodeSource
 import com.hongwei.model.covid19.AusDataByState
 import com.hongwei.model.covid19.AusDataByStatePerDay
+import com.hongwei.model.covid19.CaseByPostcode
 import com.hongwei.model.covid19.auGov.AuGovCovidMapper
 import com.hongwei.model.covid19.auGov.AuGovCovidSource
 import com.hongwei.model.jpa.au.AuGovCovidNotificationEntity
@@ -66,7 +67,7 @@ class AuGovCovidService {
         )
     }
 
-    private fun getNewCasesByPostcode(records: List<AuGovCovidNotificationEntity>): List<Triple<Long, String, Long>> {
+    private fun getNewCasesByPostcode(records: List<AuGovCovidNotificationEntity>): List<CaseByPostcode> {
         val hashMap = hashMapOf<Long, Long>()
         records.forEach {
             it.postcode?.let { postcode ->
@@ -78,8 +79,12 @@ class AuGovCovidService {
             val postcode = it.key
             val cases = it.value
             val suburbs = auSuburbRepository.findSuburb(postcode)
-            Triple(postcode, suburbs?.suburbs?.joinToString(",") ?: "", cases)
-        }.sortedByDescending { it.third }
+            CaseByPostcode(
+                    postcode,
+                    suburbs?.suburbs?.joinToString(",") ?: "",
+                    suburbs?.stateCode ?: "",
+                    cases)
+        }.sortedByDescending { it.cases }
     }
 
     fun parseCsv(): List<AuGovCovidNotificationEntity>? {
