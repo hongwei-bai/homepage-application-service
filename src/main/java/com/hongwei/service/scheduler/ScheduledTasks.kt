@@ -1,6 +1,7 @@
 package com.hongwei.service.scheduler
 
 import com.hongwei.service.AuGovCovidService
+import com.hongwei.util.TimeStampUtil.SYDNEY
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -28,8 +29,5 @@ class ScheduledTasks {
 
     companion object {
         val AustralianCovidUpdateHours = listOf(6, 14, 16)
-
-        const val UTC = "UTC"
-        const val SYDNEY = "Australia/Sydney"
     }
 }

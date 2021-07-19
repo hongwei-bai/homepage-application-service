@@ -1,7 +1,7 @@
 package com.hongwei.model.covid19.auGov
 
 import com.hongwei.model.covid19.AuGovCovidLikelyInfectionSource
-import com.hongwei.model.jpa.au.AuGovCovidNotificationEntity
+import com.hongwei.model.covid19.AuGovCovidNotification
 import com.hongwei.model.jpa.au.AuSuburbRepository
 import com.hongwei.util.DateTimeParseUtil
 import java.util.*
@@ -9,7 +9,7 @@ import java.util.*
 object AuGovCovidMapper {
     private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
 
-    fun map(postcodeRepo: AuSuburbRepository, source: AuGovCovidSource): AuGovCovidNotificationEntity? {
+    fun map(postcodeRepo: AuSuburbRepository, source: AuGovCovidSource): AuGovCovidNotification? {
         val date = DateTimeParseUtil.parseDate(source.date)
         date?.let {
             val today = Calendar.getInstance().apply {
@@ -20,15 +20,15 @@ object AuGovCovidMapper {
             }.time
             val dayDiff = (today.time - date.time) / MILLIS_PER_DAY
             val suburbInfo = source.postcode?.let { postcodeRepo.findSuburb(it) }
-            return AuGovCovidNotificationEntity(
-                    dayDiff = dayDiff,
-                    date = date,
-                    postcode = source.postcode,
-                    council = source.lgaName19,
-                    suburbs = suburbInfo?.suburbs ?: emptyList(),
-                    greatArea = source.lhd2010Name,
-                    state = suburbInfo?.stateCode,
-                    likelyInfectionSource = AuGovCovidLikelyInfectionSource.parseFromString(source.likelySourceOfInfection)
+            return AuGovCovidNotification(
+                dayDiff = dayDiff,
+                date = date,
+                postcode = source.postcode,
+                council = source.lgaName19,
+                suburbs = suburbInfo?.suburbs ?: emptyList(),
+                greatArea = source.lhd2010Name,
+                state = suburbInfo?.stateCode,
+                likelyInfectionSource = AuGovCovidLikelyInfectionSource.parseFromString(source.likelySourceOfInfection)
             )
         }
         return null
