@@ -34,4 +34,12 @@ class Covid19Controller {
 	fun getAuCovid(dataVersion: Long, days: Long? = null): ResponseEntity<*> {
 		return ResponseEntity.ok(auGovCovidService.getAuCovidData(dataVersion, days))
 	}
+
+	@RequestMapping(path = ["/auBrief.do"])
+	@ResponseBody
+	fun getAuCovidBrief(dataVersion: Long, days: Long, top: Int, followedSuburbs: String): ResponseEntity<*> {
+		return ResponseEntity.ok(auGovCovidService.getAuCovidBriefData(dataVersion, days, top,
+			followedSuburbs.split(",").toList().mapNotNull { it.toLongOrNull() }
+		))
+	}
 }

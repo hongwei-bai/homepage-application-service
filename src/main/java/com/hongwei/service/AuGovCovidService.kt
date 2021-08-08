@@ -5,7 +5,10 @@ import com.google.gson.reflect.TypeToken
 import com.hongwei.constants.NoContent
 import com.hongwei.constants.ResetContent
 import com.hongwei.model.au.AuPostcodeSource
+import com.hongwei.model.covid19.CovidAuCaseByPostcodeBrief
+import com.hongwei.model.covid19.CovidAuDayBrief
 import com.hongwei.model.covid19.CovidAuMapper
+import com.hongwei.model.covid19.CovidAuSuburbBreif
 import com.hongwei.model.covid19.auGov.AuGovCovidMapper
 import com.hongwei.model.covid19.auGov.AuGovCovidSource
 import com.hongwei.model.jpa.au.*
@@ -49,6 +52,49 @@ class AuGovCovidService {
 		)
 
 		return CovidAuMapper.getSuburbBrief(testSuburbs)
+	}
+
+	fun getAuCovidBriefData(dataVersion: Long, inDays: Long, top: Int, followedPostcodes: List<Long>): CovidAuSuburbBreif {
+		val entityDb = covidAuRepository.findRecentRecord()
+		entityDb?.let {
+			if (dataVersion < entityDb.dataVersion) {
+				return CovidAuSuburbBreif(
+					dataVersion = entityDb.dataVersion,
+					dataByDay = entityDb.dataByDay.filterIndexed { index, _ -> index < inDays }
+						.mapNotNull { raw ->
+							CovidAuDayBrief(
+								dayDiff = raw.dayDiff,
+								dateDisplay = raw.dateDisplay,
+								caseByState = raw.caseByState,
+								caseExcludeFromStates = raw.caseExcludeFromStates,
+								caseTotal = raw.caseTotal,
+								caseByPostcodeTops = raw.caseByPostcode
+									.sortedByDescending { it.cases }
+									.filterIndexed { index, _ -> index < top }
+									.map {
+										CovidAuCaseByPostcodeBrief(
+											postcode = it.postcode,
+											suburbBrief = it.suburbBrief,
+											state = it.state,
+											cases = it.cases
+										)
+									},
+								caseByPostcodeFollowed = raw.caseByPostcode
+									.filter { followedPostcodes.contains(it.postcode) }
+									.sortedByDescending { it.cases }
+									.map {
+										CovidAuCaseByPostcodeBrief(
+											postcode = it.postcode,
+											suburbBrief = it.suburbBrief,
+											state = it.state,
+											cases = it.cases
+										)
+									}
+							)
+						}
+				)
+			} else throw ResetContent
+		} ?: throw NoContent
 	}
 
 	fun getAuCovidData(dataVersion: Long, inDays: Long?): CovidAuEntity {

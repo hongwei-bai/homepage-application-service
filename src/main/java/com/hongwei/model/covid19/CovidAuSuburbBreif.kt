@@ -11,7 +11,8 @@ data class CovidAuDayBrief(
 	var caseByState: List<CovidAuCaseByState> = emptyList(),
 	var caseExcludeFromStates: Int = 0,
 	var caseTotal: Int = 0,
-	var caseByPostcode: List<CovidAuCaseByPostcodeBrief> = emptyList()
+	var caseByPostcodeTops: List<CovidAuCaseByPostcodeBrief> = emptyList(),
+	var caseByPostcodeFollowed: List<CovidAuCaseByPostcodeBrief> = emptyList()
 )
 
 data class CovidAuCaseByPostcodeBrief(
