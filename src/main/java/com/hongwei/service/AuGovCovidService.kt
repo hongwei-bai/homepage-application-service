@@ -54,11 +54,9 @@ class AuGovCovidService {
 	fun getAuCovidData(dataVersion: Long, inDays: Long?): CovidAuEntity {
 		val entityDb = covidAuRepository.findRecentRecord()
 		entityDb?.let {
-			return if (dataVersion < entityDb.dataVersion) {
-				entityDb
-					.apply {
-						dataByDay.filter { it.dayDiff <= inDays ?: 2 }
-					}
+			if (dataVersion < entityDb.dataVersion) {
+				entityDb.dataByDay = entityDb.dataByDay.filterIndexed { index, _ -> index < inDays ?: 1 }
+				return entityDb
 			} else throw ResetContent
 		} ?: throw NoContent
 	}

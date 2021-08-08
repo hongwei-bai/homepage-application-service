@@ -28,7 +28,7 @@ object CovidAuMapper {
 									cases = stateToNotificationsMap.value.size
 								)
 							}
-						},
+						}.sortedByDescending { it.cases },
 						caseExcludeFromStates = notificationsByDay.filter { it.state == null }.size,
 						caseTotal = notificationsByDay.size,
 						caseByPostcode = notificationsByDay.groupBy { it.postcode }.mapNotNull { postcodeToNotificationsMap ->
@@ -48,7 +48,7 @@ object CovidAuMapper {
 									)
 								} else null
 							}
-						}
+						}.sortedByDescending { it.cases }
 					)
 				}
 			}.sortedBy { it.dayDiff }

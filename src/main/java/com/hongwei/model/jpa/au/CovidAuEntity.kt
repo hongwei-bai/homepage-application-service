@@ -11,5 +11,5 @@ data class CovidAuEntity(
 	val dataVersion: Long = 0L,
 
 	@Lob @Convert(converter = CovidAuListConverter::class) @Column(nullable = true)
-	val dataByDay: List<CovidAuDay> = emptyList()
+	var dataByDay: List<CovidAuDay> = emptyList()
 )
