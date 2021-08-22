@@ -6,8 +6,11 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConfigurationProperties(prefix = "jwt")
 open class SecurityConfigurations {
-    lateinit var authorizationHeader: String
-    lateinit var authorizationBearer: String
-    lateinit var secretPublic: String
-    lateinit var corsAllowDomain: String
+	lateinit var authorizationHeader: String
+	lateinit var authorizationBearer: String
+	lateinit var secretPublic: String
+	lateinit var corsAllowDomain: String
+
+	lateinit var covidDomain: String
+	lateinit var covidApikey: String
 }

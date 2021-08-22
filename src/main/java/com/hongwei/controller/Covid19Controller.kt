@@ -11,28 +11,16 @@ class Covid19Controller {
 	@Autowired
 	private lateinit var auGovCovidService: AuGovCovidService
 
+	@RequestMapping(path = ["/test.do"])
+	@ResponseBody
+	fun test(): ResponseEntity<*> {
+		return ResponseEntity.ok(auGovCovidService.test())
+	}
+
 	@PutMapping(path = ["/auPostcodes.do"])
 	@ResponseBody
 	fun generateAustralianPostcodes(): ResponseEntity<*> {
 		return ResponseEntity.ok(auGovCovidService.initializeSuburb())
-	}
-
-	@PutMapping(path = ["/auGovData.do"])
-	@ResponseBody
-	fun generateAuCovidData(): ResponseEntity<*> {
-		return ResponseEntity.ok(auGovCovidService.parseCsv())
-	}
-
-	@RequestMapping(path = ["/auGovDataTest.do"])
-	@ResponseBody
-	fun generateAuCovidDataTest(): ResponseEntity<*> {
-		return ResponseEntity.ok(auGovCovidService.test())
-	}
-
-	@RequestMapping(path = ["/au.do"])
-	@ResponseBody
-	fun getAuCovid(dataVersion: Long, days: Long? = null): ResponseEntity<*> {
-		return ResponseEntity.ok(auGovCovidService.getAuCovidData(dataVersion, days))
 	}
 
 	@RequestMapping(path = ["/auBrief.do"])

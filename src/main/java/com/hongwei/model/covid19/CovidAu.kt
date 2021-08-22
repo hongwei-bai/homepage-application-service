@@ -1,10 +1,5 @@
 package com.hongwei.model.covid19
 
-data class CovidAu(
-	val dataVersion: Long,
-	val dataByDay: List<CovidAuDay>
-)
-
 data class CovidAuDay(
 	var dayDiff: Long,
 	var dateUnixTimeStamp: Long,

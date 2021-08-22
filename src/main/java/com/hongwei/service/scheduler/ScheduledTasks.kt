@@ -22,7 +22,6 @@ class ScheduledTasks {
         Thread {
             if (AustralianCovidUpdateHours.contains(hour)) {
                 auGovCovidService.initializeSuburb()
-                auGovCovidService.parseCsv()
             }
         }.start()
     }

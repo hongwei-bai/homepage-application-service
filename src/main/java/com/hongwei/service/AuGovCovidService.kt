@@ -2,34 +2,28 @@ package com.hongwei.service
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.hongwei.constants.NoContent
-import com.hongwei.constants.ResetContent
+import com.hongwei.constants.*
 import com.hongwei.model.au.AuPostcodeSource
-import com.hongwei.model.covid19.CovidAuCaseByPostcodeBrief
-import com.hongwei.model.covid19.CovidAuDayBrief
-import com.hongwei.model.covid19.CovidAuMapper
-import com.hongwei.model.covid19.CovidAuSuburbBreif
-import com.hongwei.model.covid19.auGov.AuGovCovidMapper
-import com.hongwei.model.covid19.auGov.AuGovCovidSource
-import com.hongwei.model.jpa.au.*
-import com.hongwei.util.CsvUtil
+import com.hongwei.model.covid19.*
+import com.hongwei.model.covid19mobile.MobileCovidAu
+import com.hongwei.model.jpa.au.AuSuburbEntity
+import com.hongwei.model.jpa.au.AuSuburbRepository
+import com.hongwei.model.jpa.au.CovidAuRepository
 import com.hongwei.util.LocalJsonReaderUtil
-import com.hongwei.util.curl.CUrlWrapper
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.*
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 
 @Service
 class AuGovCovidService {
 	private val logger: Logger = LogManager.getLogger(AuGovCovidService::class.java)
 
-	companion object {
-		private const val AU_GOV_COVID_DATA_URL = "https://data.nsw.gov.au/data/dataset/nsw-covid-19-cases-by-location-and-likely-source-of-infection/resource/2776dbb8-f807-4fb2-b1ed-184a6fc2c8aa"
-
-		private const val LOCATE_STRING_OPEN = "\"DCTERMS.Identifier\""
-	}
+	@Autowired
+	private lateinit var securityConfigurations: SecurityConfigurations
 
 	@Autowired
 	private lateinit var auSuburbRepository: AuSuburbRepository
@@ -50,97 +44,58 @@ class AuGovCovidService {
 			"Seven Hills",
 			"Kings Langley"
 		)
-
 		return CovidAuMapper.getSuburbBrief(testSuburbs)
 	}
 
-	fun getAuCovidBriefData(dataVersion: Long, inDays: Long, top: Int, followedPostcodes: List<Long>): CovidAuSuburbBreif {
-		val entityDb = covidAuRepository.findRecentRecord()
-		entityDb?.let {
-			if (dataVersion < entityDb.dataVersion) {
-				return CovidAuSuburbBreif(
-					dataVersion = entityDb.dataVersion,
-					dataByDay = entityDb.dataByDay.filterIndexed { index, _ -> index < inDays }
-						.mapNotNull { raw ->
-							CovidAuDayBrief(
-								dayDiff = raw.dayDiff,
-								dateDisplay = raw.dateDisplay,
-								caseByState = raw.caseByState,
-								caseExcludeFromStates = raw.caseExcludeFromStates,
-								caseTotal = raw.caseTotal,
-								caseByPostcodeTops = raw.caseByPostcode
-									.sortedByDescending { it.cases }
-									.filterIndexed { index, _ -> index < top }
-									.map {
-										CovidAuCaseByPostcodeBrief(
-											postcode = it.postcode,
-											suburbBrief = it.suburbBrief,
-											state = it.state,
-											cases = it.cases
-										)
-									},
-								caseByPostcodeFollowed = raw.caseByPostcode
-									.filter { followedPostcodes.contains(it.postcode) }
-									.sortedByDescending { it.cases }
-									.map {
-										CovidAuCaseByPostcodeBrief(
-											postcode = it.postcode,
-											suburbBrief = it.suburbBrief,
-											state = it.state,
-											cases = it.cases
-										)
-									}
-							)
-						}
-				)
-			} else throw ResetContent
-		} ?: throw NoContent
-	}
-
-	fun getAuCovidData(dataVersion: Long, inDays: Long?): CovidAuEntity {
-		val entityDb = covidAuRepository.findRecentRecord()
-		entityDb?.let {
-			if (dataVersion < entityDb.dataVersion) {
-				entityDb.dataByDay = entityDb.dataByDay.filterIndexed { index, _ -> index < inDays ?: 1 }
-				return entityDb
-			} else throw ResetContent
-		} ?: throw NoContent
-	}
-
-	fun parseCsv(): CovidAuEntity? {
-		val lines = CsvUtil.readCSVFromUrl(getCSVUrl())
-		val sourceList = mutableListOf<AuGovCovidSource>()
-		lines.forEach {
-			val data = it.split(",")
-			when (data.size) {
-				7 -> AuGovCovidSource(
-					date = data.first(),
-					postcode = data[1].toLongOrNull() ?: 0L,
-					likelySourceOfInfection = data[2],
-					lhd2010Code = data[3],
-					lhd2010Name = data[4],
-					lgaCode19 = data[5].toLongOrNull() ?: 0L,
-					lgaName19 = data[6]
-				)
-				else -> {
-					logger.debug("unrecognized record: $data")
-					null
-				}
-			}?.let { record ->
-				sourceList.add(record)
-			}
-		}
-		val notifications = sourceList.mapNotNull { AuGovCovidMapper.map(auSuburbRepository, it) }
-		val entityDb = covidAuRepository.findRecentRecord()
-		val entity = CovidAuMapper.map(auSuburbRepository, notifications)
-		if (entity != null && entityDb != entity) {
-			if (covidAuRepository.findAll().isNotEmpty()) {
-				covidAuRepository.deleteAll()
-			}
+	fun getAuCovidBriefData(dataVersionApi: Long, inDays: Long, top: Int, followedPostcodes: List<Long>): CovidAuSuburbBreif {
+		val entityDb = covidAuRepository.findRecentRecords().firstOrNull()
+		val dbDataVersion = entityDb?.dataVersion ?: 0L
+		val rawData = fetchMobileRawData(inDays, dbDataVersion)
+		val data = if (rawData != null) {
+			val entity = CovidAuMapper.map(auSuburbRepository, rawData)
 			covidAuRepository.save(entity)
-			return entity
+			entity
+		} else {
+			entityDb
 		}
-		return entityDb
+		data?.run {
+			if (dataVersionApi < dataVersion) {
+				return CovidAuSuburbBreif(
+					dataVersion = dataVersion,
+					dataByDay = dataByDay.map { generalDataByDay ->
+						CovidAuDayBrief(
+							dayDiff = generalDataByDay.dayDiff,
+							dateDisplay = generalDataByDay.dateDisplay,
+							caseByState = generalDataByDay.caseByState,
+							caseExcludeFromStates = generalDataByDay.caseExcludeFromStates,
+							caseTotal = generalDataByDay.caseTotal,
+							caseByPostcodeTops = generalDataByDay.caseByPostcode
+								.sortedByDescending { it.cases }
+								.filterIndexed { index, _ -> index < top }
+								.map {
+									CovidAuCaseByPostcodeBrief(
+										postcode = it.postcode,
+										suburbBrief = it.suburbBrief,
+										state = it.state,
+										cases = it.cases
+									)
+								},
+							caseByPostcodeFollowed = generalDataByDay.caseByPostcode
+								.filter { followedPostcodes.contains(it.postcode) }
+								.sortedByDescending { it.cases }
+								.map {
+									CovidAuCaseByPostcodeBrief(
+										postcode = it.postcode,
+										suburbBrief = it.suburbBrief,
+										state = it.state,
+										cases = it.cases
+									)
+								}
+						)
+					}
+				)
+			} else throw ResetContent
+		} ?: throw  InternalServerError
 	}
 
 	fun initializeSuburb(): List<AuSuburbEntity>? {
@@ -173,15 +128,28 @@ class AuGovCovidService {
 		return list
 	}
 
-	private fun getCSVUrl(): String {
-		CUrlWrapper.curl(AU_GOV_COVID_DATA_URL)?.toString()?.run {
-			val index0 = indexOf(LOCATE_STRING_OPEN)
-			val mid2 = substring(index0 + LOCATE_STRING_OPEN.length)
-			val index1 = mid2.indexOf("\">")
-			val mid3 = mid2.substring(0, index1)
-			val mid4 = mid3.replace("content=\"", "").trim()
-			return mid4
+	private fun fetchMobileRawData(days: Long, dataVersion: Long): MobileCovidAu? {
+		try {
+			val uri = "${securityConfigurations.covidDomain}/covid/au/raw.do?days=$days&dataVersion=$dataVersion"
+			val headers = HttpHeaders()
+			headers.add(securityConfigurations.authorizationHeader, "${securityConfigurations.authorizationBearer} ${securityConfigurations.covidApikey}")
+			val requestEntity: HttpEntity<Any> = HttpEntity<Any>(null, headers)
+			val response: ResponseEntity<MobileCovidAu> = RestTemplate().exchange(uri, HttpMethod.GET, requestEntity, MobileCovidAu::class.java)
+			if (response.statusCode.is2xxSuccessful) {
+				if (response.statusCode == HttpStatus.RESET_CONTENT) {
+					return null
+				}
+				return response.body
+			}
+		} catch (e: Unauthorized) {
+			throw e
+		} catch (e: Exception) {
+			if (e.message?.contains("JWT expired") == true) {
+				throw AppTokenExpiredException
+			}
+			e.printStackTrace()
+			throw InternalServerError
 		}
-		return ""
+		return null
 	}
 }

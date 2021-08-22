@@ -1,57 +1,58 @@
 package com.hongwei.model.covid19
 
+import com.hongwei.model.covid19mobile.MobileCovidAu
 import com.hongwei.model.jpa.au.AuSuburbRepository
 import com.hongwei.model.jpa.au.CovidAuEntity
-import com.hongwei.util.DateTimeParseUtil.toDisplay
-import com.hongwei.util.TimeStampUtil
+import com.hongwei.util.DateTimeParseUtil
 import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
+import java.util.*
 
 object CovidAuMapper {
+	private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
+
 	private val logger: Logger = LogManager.getLogger(CovidAuMapper::class.java)
 
-	fun map(postcodeRepo: AuSuburbRepository, mid: List<AuGovCovidNotification>): CovidAuEntity =
+	fun map(postcodeRepo: AuSuburbRepository, rawMobileData: MobileCovidAu): CovidAuEntity =
 		CovidAuEntity(
-			dataVersion = TimeStampUtil.getTimeVersionWithHour(),
-			dataByDay = mid.groupBy { it.dayDiff }.mapNotNull { dayDiffToNotificationMap ->
-				val notificationsByDay = dayDiffToNotificationMap.value
-				dayDiffToNotificationMap.value.firstOrNull()?.let { firstNotification ->
-					CovidAuDay(
-						dayDiff = firstNotification.dayDiff,
-						dateUnixTimeStamp = firstNotification.date?.time ?: 0L,
-						dateDisplay = toDisplay(firstNotification.date),
-						caseByState = notificationsByDay.groupBy { it.state }.mapNotNull { stateToNotificationsMap ->
-							stateToNotificationsMap.key?.let { stateCode ->
-								CovidAuCaseByState(
-									stateCode = stateCode.toUpperCase(),
-									stateName = AuState.valueOf(stateCode.toLowerCase()).fullName,
-									cases = stateToNotificationsMap.value.size
-								)
-							}
-						}.sortedByDescending { it.cases },
-						caseExcludeFromStates = notificationsByDay.filter { it.state == null }.size,
-						caseTotal = notificationsByDay.size,
-						caseByPostcode = notificationsByDay.groupBy { it.postcode }.mapNotNull { postcodeToNotificationsMap ->
-							postcodeToNotificationsMap.key?.let { postcode ->
-								val postcodeData = postcodeRepo.findSuburb(postcode)
-								val suburbs = postcodeData?.suburbs ?: emptyList<String>()
-								if (postcodeData != null) {
-									CovidAuCaseByPostcode(
-										postcode = postcode,
-										suburbs = suburbs,
-										suburbBrief = getSuburbBrief(suburbs) ?: "",
-										latitude = postcodeData.latitude,
-										longitude = postcodeData.longitude,
-										accuracy = postcodeData.accuracy,
-										state = postcodeData.stateCode.toUpperCase(),
-										cases = postcodeToNotificationsMap.value.size
-									)
-								} else null
-							}
-						}.sortedByDescending { it.cases }
-					)
-				}
-			}.sortedBy { it.dayDiff }
+			dataVersion = rawMobileData.dataVersion,
+			dataByDay = rawMobileData.dataByDay.map { mobileDataByDay ->
+				val today = Calendar.getInstance().apply {
+					set(Calendar.MILLISECOND, 0);
+					set(Calendar.SECOND, 0);
+					set(Calendar.MINUTE, 0);
+					set(Calendar.HOUR, 0);
+				}.time
+				CovidAuDay(
+					dayDiff = (today.time - mobileDataByDay.date) / MILLIS_PER_DAY,
+					dateUnixTimeStamp = mobileDataByDay.date,
+					dateDisplay = DateTimeParseUtil.toDisplay(Date(mobileDataByDay.date)),
+					caseByState = mobileDataByDay.caseByState.map { mobileDataByState ->
+						CovidAuCaseByState(
+							stateCode = mobileDataByState.stateCode,
+							stateName = mobileDataByState.stateName,
+							cases = mobileDataByState.cases
+						)
+					},
+					caseExcludeFromStates = mobileDataByDay.caseExcludeFromStates,
+					caseTotal = mobileDataByDay.caseTotal,
+					caseByPostcode = mobileDataByDay.caseByPostcode.mapNotNull { mobileDataByPostcode ->
+						val suburbInfo = postcodeRepo.findSuburb(mobileDataByPostcode.postcode)
+						suburbInfo?.let {
+							CovidAuCaseByPostcode(
+								postcode = mobileDataByPostcode.postcode,
+								suburbs = suburbInfo.suburbs,
+								suburbBrief = CovidAuMapper.getSuburbBrief(suburbInfo.suburbs) ?: "",
+								latitude = suburbInfo.latitude,
+								longitude = suburbInfo.longitude,
+								accuracy = suburbInfo.accuracy,
+								state = suburbInfo.stateCode.toUpperCase(),
+								cases = mobileDataByPostcode.cases
+							)
+						}
+					}
+				)
+			}
 		)
 
 	fun getSuburbBrief(suburbs: List<String>): String? = when (suburbs.size) {

@@ -18,9 +18,15 @@ jwt.secretPublic=Public2021
 
 #Debug
 jwt.corsAllowDomain=http://localhost:3944
+jwt.covidDomain=http://localhost:8081
+jwt.covidApikey={apikey}
 
 #Debug with Tomcat Authentication application
 #jwt.corsAllowDomain=http://localhost:3944
+#jwt.covidDomain=http://localhost:8080/application-service-covid
+#jwt.covidApikey={apikey}
 
 #Deployment
 #jwt.corsAllowDomain=https://{domain name}
+#jwt.covidDomain=https://hongwei-test1.top/application-service-covid
+#jwt.covidApikey={apikey}
