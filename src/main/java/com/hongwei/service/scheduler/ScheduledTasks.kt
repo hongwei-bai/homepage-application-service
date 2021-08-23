@@ -10,23 +10,30 @@ import java.util.*
 
 @Component
 class ScheduledTasks {
-    @Autowired
-    private lateinit var auGovCovidService: AuGovCovidService
+	@Autowired
+	private lateinit var auGovCovidService: AuGovCovidService
 
-    // 60 mins : 60 min x 60 s x 1000 ms = 1,800,000, For copy:3600000
-    @Scheduled(fixedRate = 3600000)
-    fun reportCurrentTime() {
-        val sydTime = Calendar.getInstance(TimeZone.getTimeZone(SYDNEY))
-        val hour = sydTime.get(Calendar.HOUR_OF_DAY)
+	private var onStart = true
 
-        Thread {
-            if (AustralianCovidUpdateHours.contains(hour)) {
-                auGovCovidService.initializeSuburb()
-            }
-        }.start()
-    }
+	// 60 mins : 60 min x 60 s x 1000 ms = 1,800,000, For copy:3600000
+	@Scheduled(fixedRate = 3600000)
+	fun reportCurrentTime() {
+		val sydTime = Calendar.getInstance(TimeZone.getTimeZone(SYDNEY))
+		val hour = sydTime.get(Calendar.HOUR_OF_DAY)
 
-    companion object {
-        val AustralianCovidUpdateHours = listOf(6, 14, 16)
-    }
+		Thread {
+			if (onStart) {
+				onStart = false
+				auGovCovidService.initializeSuburb()
+			}
+
+			if (AustralianCovidUpdateHours.contains(hour)) {
+				// No-Op
+			}
+		}.start()
+	}
+
+	companion object {
+		val AustralianCovidUpdateHours = listOf(6, 14, 16)
+	}
 }
